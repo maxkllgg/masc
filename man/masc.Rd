@@ -47,7 +47,10 @@ each candidate are appended as columns.}
 }
 \description{
 Implements the matching and synthetic control (masc) estimator of Kellogg, Mogstad,
- Pouliot, and Torgovitsky (2019). The estimator takes a convex combination of a
+ Pouliot, and Torgovitsky (2019).
+}
+\details{
+The \code{masc} estimator takes a convex combination of a
  nearest neighbor estimator and a synthetic control estimator. That combination
  is parametrized by a model averaging parameter which takes a value of 1 when
  the estimator is equivalent to a pure matching estimator, and 0 when it is equivalent
@@ -58,6 +61,10 @@ Implements the matching and synthetic control (masc) estimator of Kellogg, Mogst
  nearest neighbor estimator, we solve for the model averaging parameter using an analytic
  expression (see Equation 15 of the working paper). Then, we select the candidate nearest
  neighbor estimator which produces the smallest cross-validation criterion value.
+
+This implementation uses \code{gurobi} interfaced with R to solve for the synthetic control estimator.
+ Gurobi and its associated R package are available on the gurobi website:
+ \url{https://cran.r-project.org/web/packages/prioritizr/vignettes/gurobi_installation.html}
 }
 \examples{
 ##First example: third introductory exercise of Kellogg et al. (2019),
@@ -94,8 +101,8 @@ print(round(result$weights,2))
 
 #First, load the Synth package, which includes the dataset:
 library(Synth)
+library(data.table) #for convenience
 data(basque)
-basque<-as.data.table(basque)
 basque<-basque[regionno!=1,]
 basque[,regionname:= gsub(" (.*)","",regionname)]
 basque <- cbind(basque[regionno==17,gdpcap],t(reshape(basque[regionno!=17,.(regionno,year,gdpcap)], idvar='regionno', timevar='year',direction='wide')[,-"regionno",with=FALSE]))
