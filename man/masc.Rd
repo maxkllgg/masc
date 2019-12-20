@@ -103,7 +103,8 @@ print(round(result$weights,2))
 library(Synth)
 library(data.table) #for convenience
 data(basque)
-basque<-basque[regionno!=1,]
+basque<-as.data.table(basque)
+basque <- basque[regionno!=1,]
 basque[,regionname:= gsub(" (.*)","",regionname)]
 basque <- cbind(basque[regionno==17,gdpcap],t(reshape(basque[regionno!=17,.(regionno,year,gdpcap)], idvar='regionno', timevar='year',direction='wide')[,-"regionno",with=FALSE]))
 
