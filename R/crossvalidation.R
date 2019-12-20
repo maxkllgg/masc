@@ -155,7 +155,7 @@ cv_estimator <-
 #' ##First example: third introductory exercise of Kellogg et al. (2019),
 #' ## Figures 3 and 4:
 #'
-#' data3 <- data.table(t = 1:10, treated = 1:10,
+#' data3 <- data.frame(t = 1:10, treated = 1:10,
 #' control1 = c(15,12,14,22,21,28,29,30,29,31),
 #' control2 = c(10,5,10,12,16,20,22,21,23,21),
 #' control3 = c(-7,-11,-7,-3,-4,-9,-7,-3,-7,-11),
@@ -171,12 +171,15 @@ cv_estimator <-
 #'treatperiod <- 6
 #'
 #' data<-list(treated = as.matrix(data3$treated),
-#'            donors = as.matrix(data3[,-c("treated","t"),with=FALSE]),
+#'            donors = as.matrix(data3[,-c(1,2)]),
 #'             treatment=treatperiod)
 #'
 #'result<-masc(data=data, tune_pars_list=list(m=1:3,
 #'                                            min_preperiods=3,
 #'                                            set_f=NA))
+#'
+#' #Weights selected, for controls 1 through 4 respectively:
+#' print(round(result$weights,2))
 #'
 #' ##Second example: Terrorism in the Basque Region, from
 #' ##Abadie and Gardeazabal (2003).
@@ -201,6 +204,7 @@ cv_estimator <-
 #' #in thousands of 1986 US dollars, over 1970-1975:
 #' #(first 6 years of treatment)
 #' print(result$pred.error[1:6,])
+#'
 #' @export
 masc <-
   function(data,
