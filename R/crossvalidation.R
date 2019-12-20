@@ -190,7 +190,7 @@ cv_masc <-
 #'#an equivalent specification:
 #'result<-masc(data=data, tune_pars_list=list(m=1:3,
 #'                                            min_preperiods=NA,
-#'                                            set_f=3:4))
+#'                                            set_f=list(3:4)))
 #'
 #'
 #' #Weights selected, for controls 1 through 4 respectively:
