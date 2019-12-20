@@ -34,7 +34,7 @@
 #' @export
 #' @import data.table
 #' @import plyr
-cv_estimator <-
+cv_masc <-
   function(data,
            tune_pars, nogurobi=FALSE) {
     estimator <- solve_masc
@@ -255,7 +255,7 @@ masc <-
       }
     allresults <-
       lapply(tune_pars_joint, function(x)
-        cv_estimator(data = data,
+        cv_masc(data = data,
           tune_pars = x, nogurobi=nogurobi))
     #allresults is a list of unnamed things, each with named list (weights, pred error, fold stuff, tune pars, cv errors)
     output <-
