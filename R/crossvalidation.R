@@ -199,6 +199,8 @@ cv_estimator <-
 #' basque<-as.data.table(basque)
 #' basque <- basque[regionno!=1,]
 #' basque[,regionname:= gsub(" (.*)","",regionname)]
+#' #Grabbing region names:
+#' names<- c(unique(basque[regionno==17,regionname]),unique(basque[regionno!=17,regionname]))
 #' basque <- cbind(basque[regionno==17,gdpcap],
 #'                                             t(reshape(basque[regionno!=17,.(regionno,year,gdpcap)],
 #'                                              idvar='regionno', timevar='year',direction='wide')[,-"regionno",with=FALSE]))
@@ -210,6 +212,10 @@ cv_estimator <-
 #' result <- masc(data=data, tune_pars_list=list(m=1:10,
 #'                                              min_preperiods=8,
 #'                                              set_f=NA))
+#' names(result$weights)<-names[-1]
+#'
+#' #weights on control units:
+#' print(round(result$weights,3))
 #'
 #' #Treatment effects of terrorism on GDP per capita
 #' #in thousands of 1986 US dollars, over 1970-1975:
