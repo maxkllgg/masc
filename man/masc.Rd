@@ -97,13 +97,16 @@ print(round(result$weights,2))
 ##Abadie and Gardeazabal (2003).
 
 #First, load the Synth package, which includes the dataset:
+if (requireNamespace("Synth",quietly=TRUE) & requireNamespace("data.table",quietly=TRUE)){
 library(Synth)
-library(data.table) #for convenience
+library(data.table)
 data(basque)
 basque<-as.data.table(basque)
 basque <- basque[regionno!=1,]
 basque[,regionname:= gsub(" (.*)","",regionname)]
-basque <- cbind(basque[regionno==17,gdpcap],t(reshape(basque[regionno!=17,.(regionno,year,gdpcap)], idvar='regionno', timevar='year',direction='wide')[,-"regionno",with=FALSE]))
+basque <- cbind(basque[regionno==17,gdpcap],
+                                            t(reshape(basque[regionno!=17,.(regionno,year,gdpcap)],
+                                             idvar='regionno', timevar='year',direction='wide')[,-"regionno",with=FALSE]))
 
 data <- list(treated = as.matrix(basque[,1]),
              donors = as.matrix(basque[,-1]),
@@ -117,6 +120,7 @@ result <- masc(data=data, tune_pars_list=list(m=1:10,
 #in thousands of 1986 US dollars, over 1970-1975:
 #(first 6 years of treatment)
 print(result$pred.error[1:6,])
+}
 
 }
 \references{

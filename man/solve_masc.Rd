@@ -4,7 +4,7 @@
 \alias{solve_masc}
 \title{solving for matching and synthetic control weights}
 \usage{
-solve_masc(data, tune_pars, ...)
+solve_masc(data, tune_pars)
 }
 \arguments{
 \item{data}{A \code{list} containing three named elements: \describe{

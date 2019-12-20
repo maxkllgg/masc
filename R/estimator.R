@@ -38,8 +38,7 @@ Wbar <- function(donors, treated, treatment, K) {
 #' @export
 solve_masc <-
   function(data,
-           tune_pars,
-           ...) {
+           tune_pars) {
     ####Pulling objects out of lists###
     treatment <- data$treatment
     donors <- data$donors[1:(treatment - 1), ]

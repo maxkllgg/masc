@@ -13,4 +13,7 @@ Imports:
     data.table,
     gurobi,
     plyr
+Suggests:
+    Synth,
+    data.table
 RoxygenNote: 6.1.1
