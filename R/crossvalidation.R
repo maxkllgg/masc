@@ -104,7 +104,7 @@ cv_masc <-
 #'  is parametrized by a model averaging parameter which takes a value of 1 when
 #'  the estimator is equivalent to a pure matching estimator, and 0 when it is equivalent
 #'  to a pure synthetic control estimator.
-#'   his includes selecting the nearest neighbor estimator and model
+#'   This function selects the nearest neighbor estimator and model
 #'  averaging parameter by a rolling-origin cross-validation procedure. Computationally,
 #'  we minimize the cross-validation criterion in two steps. First, for each candidate
 #'  nearest neighbor estimator, we solve for the model averaging parameter using an analytic
