@@ -124,7 +124,7 @@ solve_masc <-
                                          bvec=modelreg$rhs,
                                          uvec=modelreg$ub,
                                       method = 'LU')
-     params$weights.sc <- tparams$alpha
+     params$weights.sc <- as.vector(tparams$alpha)
     }
 
     params$weights.match <- Wbar(donors, treated, treatment, m)
