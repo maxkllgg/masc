@@ -5,7 +5,7 @@
 \title{Cross-validated Estimation of the Matching and Synthetic Control Estimator.}
 \usage{
 masc(data, tune_pars_list = list(m = NA, min_preperiods = NA, set_f =
-  NA), alloutput = FALSE)
+  NA), nogurobi = FALSE, alloutput = FALSE)
 }
 \arguments{
 \item{data}{A \code{list} containing three named elements: \describe{
@@ -23,6 +23,9 @@ exctly one of the remaining two elements: \describe{
 \item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
 \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
 }}
+
+\item{nogurobi}{A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
+rather than \code{gurobi}.}
 
 \item{alloutput}{A logical value. If true, output includes a list \code{all.results} containing
 full set of output associated with each candidate nearest neighbor estimator.}
@@ -59,9 +62,12 @@ The \code{masc} estimator takes a convex combination of a
  expression (see Equation 15 of the working paper). Then, we select the candidate nearest
  neighbor estimator which produces the smallest cross-validation criterion value.
 
-This implementation uses \code{gurobi} interfaced with R to solve for the synthetic control estimator.
+This implementation by default uses \code{gurobi} interfaced with R to solve for the synthetic control estimator.
  Gurobi and its associated R package are available on the gurobi website:
  \url{https://cran.r-project.org/web/packages/prioritizr/vignettes/gurobi_installation.html}
+
+It is recommended to use this implementation of the \code{masc} estimator. However, the function may
+ alternatively use an implementation based on \link[LowRankQP]{LowRankQP} for convenience.
 }
 \examples{
 ##First example: third introductory exercise of Kellogg et al. (2019),

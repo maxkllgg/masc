@@ -4,7 +4,7 @@
 \alias{cv_estimator}
 \title{Solve for optimal model averaging parameter and associated weights and errors conditional on matching estimator.}
 \usage{
-cv_estimator(data, tune_pars)
+cv_estimator(data, tune_pars, nogurobi = FALSE)
 }
 \arguments{
 \item{data}{A \code{list} containing three named elements: \describe{

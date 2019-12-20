@@ -12,7 +12,8 @@ LazyData: true
 Imports: 
     data.table,
     gurobi,
-    plyr
+    plyr,
+    LowRankQP
 Suggests:
     Synth,
     data.table

@@ -10,9 +10,9 @@ Install using `devtools::install_github("maxkllgg/masc")`.
 
 See `help(masc)` for details and examples using this package.
 
-### Requirements
+### Recommended packages
 
-This package requires gurobi, which offers free academic licenses.
+The default implementation of this package uses gurobi, which offers free academic licenses.
 For more information, see the following link:
 
  https://www.gurobi.com/products/optimization-modeling-language-resources-support/r/

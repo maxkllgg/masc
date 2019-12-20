@@ -36,7 +36,7 @@
 #' @import plyr
 cv_estimator <-
   function(data,
-           tune_pars) {
+           tune_pars, nogurobi=FALSE) {
     estimator <- solve_masc
     min_preperiods = tune_pars$min_preperiods
     set_f = tune_pars$set_f
@@ -54,7 +54,7 @@ cv_estimator <-
                                    treated=as.matrix(data$treated)),
                          tune_pars=list(
                            m=tune_pars$m
-                         ))
+                         ), nogurobi = nogurobi)
 
     Y_sc<-NULL
     Y_match<-NULL
@@ -69,7 +69,7 @@ cv_estimator <-
                                                  treated=as.matrix(data$treated)),
                                        tune_pars=list(
                                          m=tune_pars$m
-                                       ))
+                                       ), nogurobi = nogurobi)
       Y_sc[position]<-   data$donors[k+1,]%*%foldweights[[position]]$weights.sc
 
       Y_match[position]<- data$donors[k+1,]%*%foldweights[[position]]$weights.match
@@ -110,9 +110,12 @@ cv_estimator <-
 #'  expression (see Equation 15 of the working paper). Then, we select the candidate nearest
 #'  neighbor estimator which produces the smallest cross-validation criterion value.
 #'
-#'  This implementation uses \code{gurobi} interfaced with R to solve for the synthetic control estimator.
+#'  This implementation by default uses \code{gurobi} interfaced with R to solve for the synthetic control estimator.
 #'  Gurobi and its associated R package are available on the gurobi website:
 #'  \url{https://cran.r-project.org/web/packages/prioritizr/vignettes/gurobi_installation.html}
+#'
+#'  It is recommended to use this implementation of the \code{masc} estimator. However, the function may
+#'  alternatively use an implementation based on \link[LowRankQP]{LowRankQP} for convenience.
 #'
 #' @param data A \code{list} containing three named elements: \describe{
 #' \item{donors:}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
@@ -130,6 +133,9 @@ cv_estimator <-
 #' \item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
 #' \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
 #' }
+#'
+#' @param nogurobi A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
+#' rather than \code{gurobi}.
 #'
 #' @param alloutput A logical value. If true, output includes a list \code{all.results} containing
 #' full set of output associated with each candidate nearest neighbor estimator.
@@ -217,6 +223,7 @@ masc <-
            tune_pars_list = list(m = NA,
                                  min_preperiods=NA,
                                  set_f=NA),
+           nogurobi = FALSE,
            alloutput = FALSE) {
 
     if ((!is.na(tune_pars_list$min_preperiods) &
@@ -243,7 +250,7 @@ masc <-
     allresults <-
       lapply(tune_pars_joint, function(x)
         cv_estimator(data = data,
-          tune_pars = x))
+          tune_pars = x, nogurobi=nogurobi))
     #allresults is a list of unnamed things, each with named list (weights, pred error, fold stuff, tune pars, cv errors)
     output <-
       allresults[[which.min(lapply(allresults, function(x)

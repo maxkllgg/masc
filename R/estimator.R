@@ -38,7 +38,7 @@ Wbar <- function(donors, treated, treatment, K) {
 #' @export
 solve_masc <-
   function(data,
-           tune_pars) {
+           tune_pars,nogurobi=FALSE) {
     ####Pulling objects out of lists###
     treatment <- data$treatment
     donors <- data$donors[1:(treatment - 1), ]
@@ -97,7 +97,8 @@ solve_masc <-
 
     continue <- 0
 
-    tparams <-
+   if(nogurobi==FALSE){
+     tparams <-
       gurobi::gurobi(
         modelreg,
         params = list(
@@ -107,13 +108,25 @@ solve_masc <-
           BarIterLimit = BarIterLimit
         )
       )
+
     tparams <- rename(tparams, c('x' = 'pars'))
     if (tparams$status != 'OPTIMAL') {
       print('WARNING: FAILED TO SOLVE PROBLEM')
       continue
     }
     params$weights.sc <- tparams$pars
-    params$weights.match <- Wbar(donors, treated, treatment, m)
     params$objval.sc <- tparams$objval
+   }
+    else {
+      tparams <- LowRankQP::LowRankQP(Vmat=2*modelreg$Q,
+                                         dvec=modelreg$obj,
+                                         Amat=modelreg$A,
+                                         bvec=modelreg$rhs,
+                                         uvec=modelreg$ub,
+                                      method = 'LU')
+     params$weights.sc <- tparams$alpha
+    }
+
+    params$weights.match <- Wbar(donors, treated, treatment, m)
     return(params)
   }
