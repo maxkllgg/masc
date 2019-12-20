@@ -16,8 +16,9 @@ cv_masc(data, tune_pars, nogurobi = FALSE)
 \item{tune_pars}{A \code{list} containing 3 elements. You must specify the first, and you must specify
 exctly one of the remaining two elements: \describe{
 \item{m:}{ a vector of integers representing the set of candidate nearest neighbor estimators.}
-\item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
-\item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
+\item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.}
+\item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
+ for cross-validation. Each integer identifies a fold by the last time period used in estimation.}
 }}
 }
 \value{

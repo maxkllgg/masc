@@ -23,7 +23,8 @@ Wbar <- function(donors, treated, treatment, K) {
 #' @param data A \code{list} containing three named elements: \describe{
 #' \item{donors:}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
 #' \item{treated:}{A \eqn{Tx1} matrix of outcome paths for the treated unit.}
-#' \item{treatment:}{An integer. The period T' in which treatment occurs (\eqn{T'<T}).}
+#' \item{treatment:}{An integer. The period T' (T' < T) in which forecasting begins (either the true treatment
+#' period or the first period after a cross-validation fold).}
 #' }
 #'
 #' @param tune_pars A \code{list} containing one element:

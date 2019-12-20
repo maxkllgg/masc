@@ -20,8 +20,9 @@ the time series values for a single outcome for each unit. It does not allow for
 \item{tune_pars_list}{A \code{list} containing 3 elements. You must specify the first, and you must specify
 exctly one of the remaining two elements: \describe{
 \item{m:}{ a vector of integers representing the set of candidate nearest neighbor estimators.}
-\item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
-\item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
+\item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.}
+\item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
+ for cross-validation. Each integer identifies a fold by the last time period used in estimation.}
 }}
 
 \item{nogurobi}{A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
@@ -95,6 +96,12 @@ data<-list(treated = as.matrix(data3$treated),
 result<-masc(data=data, tune_pars_list=list(m=1:3,
                                            min_preperiods=3,
                                            set_f=NA))
+
+#an equivalent specification:
+result<-masc(data=data, tune_pars_list=list(m=1:3,
+                                           min_preperiods=NA,
+                                           set_f=3:4))
+
 
 #Weights selected, for controls 1 through 4 respectively:
 print(round(result$weights,2))

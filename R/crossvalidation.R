@@ -14,8 +14,9 @@
 #' @param tune_pars A \code{list} containing 3 elements. You must specify the first, and you must specify
 #' exctly one of the remaining two elements: \describe{
 #' \item{m:}{ a vector of integers representing the set of candidate nearest neighbor estimators.}
-#' \item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
-#' \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
+#' \item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.}
+#' \item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
+#'  for cross-validation. Each integer identifies a fold by the last time period used in estimation.}
 #' }
 #'
 #'
@@ -40,9 +41,9 @@ cv_masc <-
     estimator <- solve_masc
     min_preperiods = tune_pars$min_preperiods
     set_f = tune_pars$set_f
-    if ((is.na(min_preperiods) & is.na(set_f)) |
-        (!is.na(min_preperiods) & !is.na(set_f)))
-      stop("You must specify precisely one of min_preperiods and set_f")
+    if ((is.na(min_preperiods) & any(is.na(set_f))) |
+        (!is.na(min_preperiods) & !any(is.na(set_f))))
+      stop("You must specify precisely one of min_preperiods and set_f.")
     if (!is.na(min_preperiods)) set_f <- min_preperiods:(data$treatment - 2)
 
 
@@ -130,8 +131,9 @@ cv_masc <-
 #' @param tune_pars_list A \code{list} containing 3 elements. You must specify the first, and you must specify
 #' exctly one of the remaining two elements: \describe{
 #' \item{m:}{ a vector of integers representing the set of candidate nearest neighbor estimators.}
-#' \item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
-#' \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
+#' \item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.}
+#' \item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
+#'  for cross-validation. Each integer identifies a fold by the last time period used in estimation.}
 #' }
 #'
 #' @param nogurobi A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
@@ -185,6 +187,12 @@ cv_masc <-
 #'                                            min_preperiods=3,
 #'                                            set_f=NA))
 #'
+#'#an equivalent specification:
+#'result<-masc(data=data, tune_pars_list=list(m=1:3,
+#'                                            min_preperiods=NA,
+#'                                            set_f=3:4))
+#'
+#'
 #' #Weights selected, for controls 1 through 4 respectively:
 #' print(round(result$weights,2))
 #'
@@ -233,9 +241,9 @@ masc <-
            alloutput = FALSE) {
 
     if ((!is.na(tune_pars_list$min_preperiods) &
-         !is.na(tune_pars_list$set_f)) |
+         !any(is.na(tune_pars_list$set_f))) |
         (is.na(tune_pars_list$min_preperiods) &
-         is.na(tune_pars_list$set_f)))
+         any(is.na(tune_pars_list$set_f))))
       stop("You must specify precisely one of min_preperiods and set_f. The other must be NA.")
       tune_pars_joint <- list()
       position = 1
