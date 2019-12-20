@@ -1,7 +1,7 @@
 #' Solve for optimal model averaging parameter and associated weights and errors conditional on matching estimator.
 #'
 #' Implements the matching and synthetic control (masc) estimator of Kellogg, Mogstad,
-#'  Pouliot, and Torgovitsky (2019), \emph{conditional on a given matching estimator}.
+#'  Pouliot, and Torgovitsky (2019), \emph{conditional on a given matching estimator} characterized by m.
 #'  \link{masc} loops over evaluations of this function for each candidate matching estimator,
 #'  and selects the one which minimizes cross-validation error.
 #'
@@ -18,8 +18,6 @@
 #' \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
 #' }
 #'
-#' @param estimator A function defining an objective to minimize with respect to the tuning parameter values. Defaults
-#' to the masc estimator (\link{solve_masc}), but one could in principle replace this with another estimator taking the same arguments.
 #'
 #' @return returns a list containing five objects:
 #' \describe{
@@ -38,8 +36,8 @@
 #' @import plyr
 cv_estimator <-
   function(data,
-           tune_pars,
-           estimator) {
+           tune_pars) {
+    estimator <- solve_masc
     min_preperiods = tune_pars$min_preperiods
     set_f = tune_pars$set_f
     if ((is.na(min_preperiods) & is.na(set_f)) |
@@ -133,9 +131,6 @@ cv_estimator <-
 #' \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
 #' }
 #'
-#' @param estimator A function defining an objective to minimize with respect to the tuning parameter values. Defaults
-#' to the masc estimator (\link{solve_masc}), but one could in principle replace this with another estimator taking the same arguments.
-#'
 #' @param alloutput A logical value. If true, output includes a list \code{all.results} containing
 #' full set of output associated with each candidate nearest neighbor estimator.
 #'
@@ -167,7 +162,7 @@ cv_estimator <-
 #' control3 = c(-7,-11,-7,-3,-4,-9,-7,-3,-7,-11),
 #' control4 = c(-15,-13,-14,-16,-15,-12,-13,-13,-14,-14))
 #'
-#' #controls are stored as differences from treated unit, translating into levels:
+#' #controls are above stored as differences from treated unit. Translating into levels:
 #' data3$control1 <- data3$control1 + data3$treated
 #' data3$control2 <- data3$control2 + data3$treated
 #' data3$control3 <- data3$control3 + data3$treated
@@ -218,7 +213,6 @@ masc <-
            tune_pars_list = list(m = NA,
                                  min_preperiods=NA,
                                  set_f=NA),
-           estimator = solve_masc,
            alloutput = FALSE) {
 
     if ((!is.na(tune_pars_list$min_preperiods) &
@@ -244,9 +238,7 @@ masc <-
       }
     allresults <-
       lapply(tune_pars_joint, function(x)
-        cv_estimator(
-          estimator = estimator,
-          data = data,
+        cv_estimator(data = data,
           tune_pars = x))
     #allresults is a list of unnamed things, each with named list (weights, pred error, fold stuff, tune pars, cv errors)
     output <-

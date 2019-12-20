@@ -4,7 +4,7 @@
 \alias{cv_estimator}
 \title{Solve for optimal model averaging parameter and associated weights and errors conditional on matching estimator.}
 \usage{
-cv_estimator(data, tune_pars, estimator)
+cv_estimator(data, tune_pars)
 }
 \arguments{
 \item{data}{A \code{list} containing three named elements: \describe{
@@ -19,9 +19,6 @@ exctly one of the remaining two elements: \describe{
 \item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
 \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
 }}
-
-\item{estimator}{A function defining an objective to minimize with respect to the tuning parameter values. Defaults
-to the masc estimator (\link{solve_masc}), but one could in principle replace this with another estimator taking the same arguments.}
 }
 \value{
 returns a list containing five objects:
@@ -35,7 +32,7 @@ returns a list containing five objects:
 }
 \description{
 Implements the matching and synthetic control (masc) estimator of Kellogg, Mogstad,
- Pouliot, and Torgovitsky (2019), \emph{conditional on a given matching estimator}.
+ Pouliot, and Torgovitsky (2019), \emph{conditional on a given matching estimator} characterized by m.
  \link{masc} loops over evaluations of this function for each candidate matching estimator,
  and selects the one which minimizes cross-validation error.
 }

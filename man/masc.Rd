@@ -5,7 +5,7 @@
 \title{Cross-validated Estimation of the Matching and Synthetic Control Estimator.}
 \usage{
 masc(data, tune_pars_list = list(m = NA, min_preperiods = NA, set_f =
-  NA), estimator = solve_masc, alloutput = FALSE)
+  NA), alloutput = FALSE)
 }
 \arguments{
 \item{data}{A \code{list} containing three named elements: \describe{
@@ -23,9 +23,6 @@ exctly one of the remaining two elements: \describe{
 \item{min_preperiods:}{an integer. The smallest number of periods allowed in a fold used for cross-validation.}
 \item{set_f:}{a vector of integers. Identifies the set of folds used for cross-validation (see section 3 of paper).}
 }}
-
-\item{estimator}{A function defining an objective to minimize with respect to the tuning parameter values. Defaults
-to the masc estimator (\link{solve_masc}), but one could in principle replace this with another estimator taking the same arguments.}
 
 \item{alloutput}{A logical value. If true, output includes a list \code{all.results} containing
 full set of output associated with each candidate nearest neighbor estimator.}
@@ -76,7 +73,7 @@ control2 = c(10,5,10,12,16,20,22,21,23,21),
 control3 = c(-7,-11,-7,-3,-4,-9,-7,-3,-7,-11),
 control4 = c(-15,-13,-14,-16,-15,-12,-13,-13,-14,-14))
 
-#controls are stored as differences from treated unit, translating into levels:
+#controls are above stored as differences from treated unit. Translating into levels:
 data3$control1 <- data3$control1 + data3$treated
 data3$control2 <- data3$control2 + data3$treated
 data3$control3 <- data3$control3 + data3$treated

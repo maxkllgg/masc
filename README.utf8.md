@@ -12,8 +12,7 @@ See `help(masc)` for details and examples using this package.
 
 ### Requirements
 
-This package requires gurobi, which offers free academic licenses.
-For more information, see the following link:
+This package requires gurobi, which offers free academic licenses:
 
  https://www.gurobi.com/products/optimization-modeling-language-resources-support/r/
 
