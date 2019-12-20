@@ -140,7 +140,7 @@ Kellogg, M., M. Mogstad, G. Pouliot, and A. Torgovitsky. Combining Matching and 
  off Biases from Extrapolation and Interpolation. Working Paper, 2019.
 }
 \seealso{
-Other masc functions: \code{\link{cv_estimator}},
+Other masc functions: \code{\link{cv_masc}},
   \code{\link{solve_masc}}
 }
 \concept{masc functions}
