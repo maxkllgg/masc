@@ -4,26 +4,38 @@
 \alias{masc}
 \title{Cross-validated Estimation of the Matching and Synthetic Control Estimator.}
 \usage{
-masc(data, tune_pars_list = list(m = NA, min_preperiods = NA, set_f =
-  NA), nogurobi = FALSE, alloutput = FALSE)
+masc(treated, donors, treatment = NULL, sc_est = sc_estimator,
+  tune_pars_list = list(), nogurobi = FALSE, alloutput = FALSE)
 }
 \arguments{
-\item{data}{A \code{list} containing three named elements: \describe{
-\item{donors:}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
-\item{treated:}{A \eqn{Tx1} matrix of outcome paths for the treated unit.}
-\item{treatment:}{An integer. The period T' in which treatment begins (\eqn{T'<=T}).}
-}
+\item{treated}{A \eqn{Tx1} matrix of outcomes for the treated unit.}
+
+\item{donors}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.
 
 Note that currently this estimator is designed so that \code{donors} and \code{treated} should only contain
 the time series values for a single outcome for each unit. It does not allow for including other covariates.}
 
-\item{tune_pars_list}{A \code{list} containing 3 elements. You must specify the first, and you must specify
-exctly one of the remaining two elements: \describe{
-\item{m:}{ a vector of integers representing the set of candidate nearest neighbor estimators.}
-\item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.}
+\item{treatment}{An integer. The period T' in which forecasting begins. If \code{NULL} or T'>T, then we
+assume all data is pre-treatment.}
+
+\item{sc_est}{A \code{function} which constructs weights associated with a synthetic control-type estimator. See
+\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.}
+
+\item{tune_pars_list}{A \code{list} containing 3 elements. You may specify
+only one of \code{min_preperiods} and \code{set_f}. Those elements describe the folds we include in the cross-validation procedure.
+Each fold \code{f} is indexed by the last period it uses for estimation. That is, fold \code{f} will fit estimators using
+data from period 1 through period \code{f}, and forecast into period \code{f+1}. \describe{
+\item{m:}{ a vector of integers. Denotes the set of nearest neighbor estimators from which we are allowed to pick.
+E.g., \code{m=c(1,3,5)} would allow us to pick from 1-NN, 3-NN, or 5-NN.
+If \code{NULL}, we default to allowing all possible nearest neighbor estimators.}
+\item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.
+We use all folds from fold \code{min_preperiods} up to the latest possible fold \code{treatment-2}.}
 \item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
- for cross-validation. Each integer identifies a fold by the last time period it uses in estimation.}
-}}
+ for cross-validation. As above, each integer identifies a fold by the last time period it uses in estimation.
+ E.g., set_f=c(7,8,9) would implement cross-validation using fold 7, fold 8, and fold 9.}
+}
+If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceil(treatment/2)}.
+In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.}
 
 \item{nogurobi}{A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
 rather than \code{gurobi}.}
@@ -34,8 +46,8 @@ full set of output associated with each candidate nearest neighbor estimator.}
 \value{
 By default, returns a list containing five objects:
 \describe{
-\item{phi:}{selected value for the model averaging parameter (1 is pure matching, 0 pure synthetic control).}
-\item{m:}{selected matching (nearest neighbor) estimator.}
+\item{phi_hat:}{selected value for the model averaging parameter (1 is pure matching, 0 pure synthetic control).}
+\item{m_hat:}{selected matching (nearest neighbor) estimator.}
 \item{weights:}{The vector length N containing weights placed on each control unit.}
 \item{pred.error:}{The vector of treatment effects implied by the masc counterfactual, for periods T' to T.}
 \item{cv.error:}{The cross-validation error value returned by the optimal set of tuning parameter values.}
@@ -56,7 +68,7 @@ The \code{masc} estimator takes a convex combination of a
  is parametrized by a model averaging parameter which takes a value of 1 when
  the estimator is equivalent to a pure matching estimator, and 0 when it is equivalent
  to a pure synthetic control estimator.
-  his includes selecting the nearest neighbor estimator and model
+  This function selects the nearest neighbor estimator and model
  averaging parameter by a rolling-origin cross-validation procedure. Computationally,
  we minimize the cross-validation criterion in two steps. First, for each candidate
  nearest neighbor estimator, we solve for the model averaging parameter using an analytic
@@ -89,19 +101,12 @@ data3$control4 <- data3$control4 + data3$treated
 #defining treatment period:
 treatperiod <- 6
 
-data<-list(treated = as.matrix(data3$treated),
-           donors = as.matrix(data3[,-c(1,2)]),
-            treatment=treatperiod)
-
-result<-masc(data=data, tune_pars_list=list(m=1:3,
-                                           min_preperiods=3,
-                                           set_f=NA))
+result<-masc(treated=data3$treated,donors=data3[,-c(1,2)],treatment=treatperiod,
+            tune_pars_list=list(m=1:3,min_preperiods=3))
 
 #an equivalent specification:
-result<-masc(data=data, tune_pars_list=list(m=1:3,
-                                           min_preperiods=NA,
-                                           set_f=list(3:4)))
-
+result<-masc(treated=data3$treated,donors=data3[,-c(1,2)],treatment=treatperiod,
+            tune_pars_list=list(m=1:3,set_f=list(3:4)))
 
 #Weights selected, for controls 1 through 4 respectively:
 print(round(result$weights,2))
@@ -123,13 +128,9 @@ basque <- cbind(basque[regionno==17,gdpcap],
                                             t(reshape(basque[regionno!=17,.(regionno,year,gdpcap)],
                                              idvar='regionno', timevar='year',direction='wide')[,-"regionno",with=FALSE]))
 
-data <- list(treated = as.matrix(basque[,1]),
-             donors = as.matrix(basque[,-1]),
-             treatment = 16)
 
-result <- masc(data=data, tune_pars_list=list(m=1:10,
-                                             min_preperiods=8,
-                                             set_f=NA))
+result <- masc(treated=basque[,1], donors=basque[,-1],treatment=16, tune_pars_list=list(m=1:10,
+                                             min_preperiods=8))
 names(result$weights)<-names[-1]
 
 #weights on control units:
@@ -139,7 +140,23 @@ print(round(result$weights,3))
 #in thousands of 1986 US dollars, over 1970-1975:
 #(first 6 years of treatment)
 print(result$pred.error[1:6,])
+
+#Selected tuning parameters?
+print(paste0("Selected matching estimator: ",result$m_hat))
+print(paste0("Selected weight on matching: ",result$phi_hat))
+
+#Now, examine the shape of A) the CV error (mean square prediciton error in pre-period) and
+# B) average prediction error (AKA treatment effect) over the first 5 treatment years,
+#both over values of phi, fixing the matching estimator (moving from matching to synthetic controls)
+phis<-seq(0,1,length.out=100)
+phi_table<-masc_by_phi(treated=basque[,1], donors=basque[,-1],treatment=16, tune_pars=list(m=result$m_hat,
+                                             min_preperiods=8),phivals=phis)
+#Printing CV error and prediction error over values of phi. CV error is clearly lowest at intermediary values of phi,
+#suggesting an estimator between matching and synthetic controls does best at forecasting. The average medium-run treatment
+#effect is monotonically increasing as we move away from synthetic control and toward matching.
+print(phi_table)
 }
+
 
 }
 \references{
@@ -148,6 +165,7 @@ Kellogg, M., M. Mogstad, G. Pouliot, and A. Torgovitsky. Combining Matching and 
 }
 \seealso{
 Other masc functions: \code{\link{cv_masc}},
+  \code{\link{masc_by_phi}}, \code{\link{sc_estimator}},
   \code{\link{solve_masc}}
 }
 \concept{masc functions}

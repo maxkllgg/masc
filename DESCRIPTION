@@ -1,6 +1,6 @@
 Package: masc
 Title: Matching and Synthetic Controls Estimator
-Version: 0.0.0.9000
+Version: 0.0.1.0000
 Date: 2019-12-19
 Authors@R: person("Maxwell", "Kellogg", email = "mdkellogg@uchicago.edu",
                   role = c("aut", "cre"))

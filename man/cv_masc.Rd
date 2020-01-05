@@ -4,28 +4,47 @@
 \alias{cv_masc}
 \title{Solve for optimal model averaging parameter and associated weights and errors conditional on matching estimator.}
 \usage{
-cv_masc(data, tune_pars, nogurobi = FALSE)
+cv_masc(treated, donors, treatment = NULL, sc_est = sc_estimator,
+  tune_pars = list(min_preperiods = NULL, set_f = NULL, m = NULL),
+  nogurobi = FALSE, phival = NULL)
 }
 \arguments{
-\item{data}{A \code{list} containing three named elements: \describe{
-\item{donors:}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
-\item{treated:}{A \eqn{Tx1} matrix of outcome paths for the treated unit.}
-\item{treatment:}{An integer. The period T' in which treatment occurs (\eqn{T'<T}).}
-}}
+\item{treated}{A \eqn{Tx1} matrix of outcomes for the treated unit.}
 
-\item{tune_pars}{A \code{list} containing 3 elements. You must specify the first, and you must specify
-exctly one of the remaining two elements: \describe{
-\item{m:}{ a vector of integers representing the set of candidate nearest neighbor estimators.}
-\item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.}
+\item{donors}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
+
+\item{treatment}{An integer. The period T' in which forecasting begins.
+If \code{NULL} or T'>T, then we assume all data is pre-treatment.}
+
+\item{sc_est}{A \code{function} which constructs weights associated with a synthetic control-type estimator. See
+\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.}
+
+\item{tune_pars}{A \code{list} containing 3 elements. You must specify the first, and you may specify
+only one of the last two elements. The last two elements describe the folds we include in the cross-validation procedure.
+Each fold \code{f} is denoted by the last period it uses for estimation. That is, fold \code{f} will fit estimators using
+data from period 1 through period \code{f}, and forecast into period \code{f+1}. \describe{
+\item{m:}{ an integer representing the  nearest neighbor estimator used.}
+\item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.
+We use all folds from fold \code{min_preperiods} up to the latest possible fold \code{treatment-2}.}
 \item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
- for cross-validation. Each integer identifies a fold by the last time period it uses in estimation.}
-}}
+ for cross-validation. As above, each integer identifies a fold by the last time period it uses in estimation.
+ E.g., set_f=c(7,8,9) would implement cross-validation using fold 7, fold 8, and fold 9.}
+}
+If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceil(treatment/2)}.
+In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.}
+
+\item{nogurobi}{A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
+rather than \code{gurobi}.}
+
+\item{phival}{A real value between 0 and 1. If specified, hard-codes the masc estimator to take the specified weighted
+average of matching and synthetic controls, where \code{phival} indicates the weight on matching (\code{1-phival} being the
+weight on synthetic controls).}
 }
 \value{
 returns a list containing five objects:
 \describe{
-\item{phi:}{selected value for the model averaging parameter (1 is pure matching, 0 pure synthetic control).}
-\item{m:}{selected matching (nearest neighbor) estimator.}
+\item{phi_hat:}{selected value for the model averaging parameter (1 is pure matching, 0 pure synthetic control).}
+\item{m_hat:}{selected matching estimator (number of nearest neighbor).}
 \item{weights:}{The vector length N containing weights placed on each control unit.}
 \item{pred.error:}{The vector of treatment effects implied by the masc counterfactual, for periods T' to T.}
 \item{cv.error:}{The cross-validation error value returned by the optimal set of tuning parameter values.}
@@ -42,7 +61,8 @@ Kellogg, M., M. Mogstad, G. Pouliot, and A. Torgovitsky. Combining Matching and 
  off Biases from Extrapolation and Interpolation. Working Paper, 2019.
 }
 \seealso{
-Other masc functions: \code{\link{masc}},
+Other masc functions: \code{\link{masc_by_phi}},
+  \code{\link{masc}}, \code{\link{sc_estimator}},
   \code{\link{solve_masc}}
 }
 \concept{masc functions}

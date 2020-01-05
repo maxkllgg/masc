@@ -2,6 +2,8 @@
 
 export(cv_masc)
 export(masc)
+export(masc_by_phi)
+export(sc_estimator)
 export(solve_masc)
 import(data.table)
 import(plyr)
