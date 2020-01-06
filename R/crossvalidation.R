@@ -410,7 +410,7 @@ cv_masc <-
 #' #both over values of phi, fixing the matching estimator (moving from matching to synthetic controls)
 #' phis<-seq(0,1,length.out=100)
 #'phi_table<-masc_by_phi(treated=basque[,1], donors=basque[,-1],treatment=16, tune_pars=list(m=result$m_hat,
-#'                                              min_preperiods=8),phivals=phis)
+#'                                              min_preperiods=8,phis=phis))
 #'#Printing CV error and prediction error over values of phi. CV error is clearly lowest at intermediary values of phi,
 #'#suggesting an estimator between matching and synthetic controls does best at forecasting. The average medium-run treatment
 #'#effect is monotonically increasing as we move away from synthetic control and toward matching.
