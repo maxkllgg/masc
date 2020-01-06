@@ -22,8 +22,10 @@
 #' only one of the last two elements. The last two elements describe the folds we include in the cross-validation procedure.
 #' Each fold \code{f} is denoted by the last period it uses for estimation. That is, fold \code{f} will fit estimators using
 #' data from period 1 through period \code{f}, and forecast into period \code{f+1}. \describe{
-#' \item{m:}{ a vector of integers. Denotes the set of nearest neighbor estimators with which to combine synthetic controls.
-#' E.g., \code{m=c(1,3,5)} would combine synthetic controls iteratively with  1-NN, 3-NN, and 5-NN.
+#' \item{m:}{ a vector of integers. Denotes the set of nearest neighbor estimators from which we are allowed to pick.
+#' E.g., \code{tune_pars_list$m=c(1,3,5)} would allow us to pick from 1-NN, 3-NN, or 5-NN.
+#' Alternatively, \code{tune_pars_list$m} permits a logical vector. In this case, e.g., \code{tune_pars_list$m=c(FALSE,TRUE,TRUE)}
+#' would allow us to pick from 2-NN or 3-NN.
 #' If \code{NULL}, we default to allowing all possible nearest neighbor estimators.}
 #' \item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.
 #' We use all folds from fold \code{min_preperiods} up to the latest possible fold \code{treatment-2}.}
@@ -115,6 +117,7 @@ masc_by_phi<-function(treated, donors,treatment=NULL,
                                      m=NULL,phis=seq(from=0,to=1,length.out=100)),sc_est=sc_estimator,
                       treatinterval=NULL){
   phi_table<-NULL
+  if(is.logical(tune_pars$m)) tune_pars$m<-which(tune_pars$m)
   if(is.null(tune_pars$m))tune_pars$m<-1:ncol(donors)
 for(mpos in 1:length(tune_pars$m)){
   mval <- tune_pars$m[mpos]
@@ -302,7 +305,9 @@ cv_masc <-
 #' Each fold \code{f} is indexed by the last period it uses for estimation. That is, fold \code{f} will fit estimators using
 #' data from period 1 through period \code{f}, and forecast into period \code{f+1}. \describe{
 #' \item{m:}{ a vector of integers. Denotes the set of nearest neighbor estimators from which we are allowed to pick.
-#' E.g., \code{m=c(1,3,5)} would allow us to pick from 1-NN, 3-NN, or 5-NN.
+#' E.g., \code{tune_pars_list$m=c(1,3,5)} would allow us to pick from 1-NN, 3-NN, or 5-NN.
+#' Alternatively, \code{tune_pars_list$m} permits a logical vector. In this case, e.g., \code{tune_pars_list$m=c(FALSE,TRUE,TRUE)}
+#' would allow us to pick from 2-NN or 3-NN.
 #' If \code{NULL}, we default to allowing all possible nearest neighbor estimators.}
 #' \item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.
 #' We use all folds from fold \code{min_preperiods} up to the latest possible fold \code{treatment-2}.}
@@ -435,6 +440,7 @@ masc <-
     if(is.null(tune_pars_list$min_preperiods)) tune_pars_list$min_preperiods<-NA
 
     if(is.null(tune_pars_list$m)) tune_pars_list$m<-1:ncol(donors)
+    if(is.logical(tune_pars_list$m)) tune_pars_list$m<-which(tune_pars_list$m)
       tune_pars_joint <- list()
       position = 1
 
