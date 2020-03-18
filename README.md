@@ -34,4 +34,5 @@ For more information, see the following link:
 ### Equations and Computation
 See [our computational note](https://github.com/maxkllgg/masc/blob/master/computation/computation.pdf).
 
-
+### Questions and Issues
+Please feel free to submit an issue on the Github repository.
