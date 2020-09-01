@@ -4,10 +4,15 @@
 \alias{masc_by_phi}
 \title{Report cross-validation error and Prediction Error, Moving between Matching and Synthetic Controls}
 \usage{
-masc_by_phi(treated, donors, treatment = NULL,
-  tune_pars = list(min_preperiods = NULL, set_f = NULL, m = NULL, phis =
-  seq(from = 0, to = 1, length.out = 100)), sc_est = sc_estimator,
-  treatinterval = NULL)
+masc_by_phi(
+  treated,
+  donors,
+  treatment = NULL,
+  tune_pars = list(min_preperiods = NULL, set_f = NULL, m = NULL, phis = seq(from = 0,
+    to = 1, length.out = 100)),
+  sc_est = sc_estimator,
+  treatinterval = NULL
+)
 }
 \arguments{
 \item{treated}{A \eqn{Tx1} matrix of outcomes for the treated unit.}
@@ -32,7 +37,7 @@ We use all folds from fold \code{min_preperiods} up to the latest possible fold 
  for cross-validation. As above, each integer identifies a fold by the last time period it uses in estimation.
  E.g., set_f=c(7,8,9) would implement cross-validation using fold 7, fold 8, and fold 9.}
 }
-If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceil(treatment/2)}.
+If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
 In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.}
 
 \item{sc_est}{A \code{function} which constructs weights associated with a synthetic control-type estimator. See
@@ -120,8 +125,10 @@ Kellogg, M., M. Mogstad, G. Pouliot, and A. Torgovitsky. Combining Matching and 
  off Biases from Extrapolation and Interpolation. Working Paper, 2019.
 }
 \seealso{
-Other masc functions: \code{\link{cv_masc}},
-  \code{\link{masc}}, \code{\link{sc_estimator}},
-  \code{\link{solve_masc}}
+Other masc functions: 
+\code{\link{cv_masc}()},
+\code{\link{masc}()},
+\code{\link{sc_estimator}()},
+\code{\link{solve_masc}()}
 }
 \concept{masc functions}

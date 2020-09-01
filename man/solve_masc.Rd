@@ -4,8 +4,7 @@
 \alias{solve_masc}
 \title{solving for matching and synthetic control weights}
 \usage{
-solve_masc(donors, treated, treatment, sc_est, tune_pars,
-  nogurobi = FALSE)
+solve_masc(donors, treated, treatment, sc_est, tune_pars, nogurobi = FALSE)
 }
 \arguments{
 \item{donors}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
@@ -36,8 +35,10 @@ Kellogg, M., M. Mogstad, G. Pouliot, and A. Torgovitsky. Combining Matching and 
  off Biases from Extrapolation and Interpolation. Working Paper, 2019.
 }
 \seealso{
-Other masc functions: \code{\link{cv_masc}},
-  \code{\link{masc_by_phi}}, \code{\link{masc}},
-  \code{\link{sc_estimator}}
+Other masc functions: 
+\code{\link{cv_masc}()},
+\code{\link{masc_by_phi}()},
+\code{\link{masc}()},
+\code{\link{sc_estimator}()}
 }
 \concept{masc functions}

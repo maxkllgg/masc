@@ -17,4 +17,4 @@ Imports:
 Suggests:
     Synth,
     data.table
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.1
