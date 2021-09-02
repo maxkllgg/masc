@@ -7,11 +7,16 @@
 masc_by_phi(
   treated,
   donors,
+  treated.covariates = NULL,
+  donors.covariates = NULL,
   treatment = NULL,
+  sc_est = sc_estimator,
+  match_est = NearestNeighbors,
   tune_pars = list(min_preperiods = NULL, set_f = NULL, m = NULL, phis = seq(from = 0,
     to = 1, length.out = 100)),
-  sc_est = sc_estimator,
-  treatinterval = NULL
+  cv_pars = list(forecast.minlength = 1, forecast.maxlength = 1),
+  treatinterval = NULL,
+  ...
 )
 }
 \arguments{
@@ -21,6 +26,9 @@ masc_by_phi(
 
 \item{treatment}{An integer. The period T' in which forecasting begins.
 If \code{NULL} or T'>T, then we assume all data is pre-treatment.}
+
+\item{sc_est}{A \code{function} which constructs weights associated with a synthetic control-type estimator. See
+\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.}
 
 \item{tune_pars}{A \code{list} containing 3 elements. You must specify the first, and you may specify
 only one of the last two elements. The last two elements describe the folds we include in the cross-validation procedure.
@@ -39,9 +47,6 @@ We use all folds from fold \code{min_preperiods} up to the latest possible fold 
 }
 If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
 In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.}
-
-\item{sc_est}{A \code{function} which constructs weights associated with a synthetic control-type estimator. See
-\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.}
 
 \item{treatinterval}{A vector. Indicates the post-treatment periods used when reporting average
 treatment effects in the column \code{pred} of the output. E.g., \code{treatinterval=1:5} causes the \code{pred}

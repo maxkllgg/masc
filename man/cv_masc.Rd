@@ -7,27 +7,21 @@
 cv_masc(
   treated,
   donors,
+  treated.covariates = NULL,
+  donors.covariates = NULL,
   treatment = NULL,
   sc_est = sc_estimator,
-  tune_pars = list(min_preperiods = NULL, set_f = NULL, m = NULL, weights_f = NULL),
+  match_est = NearestNeighbors,
+  tune_pars = list(min_preperiods = NULL, set_f = NULL, m = NULL, weights_f = NULL,
+    matchVfun = NULL),
   cv_pars = list(forecast.minlength = 1, forecast.maxlength = 1),
-  nogurobi = FALSE,
-  phival = NULL
+  phival = NULL,
+  ...
 )
 }
 \arguments{
-\item{treated}{A \eqn{Tx1} matrix of outcomes for the treated unit.}
-
-\item{donors}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
-
-\item{treatment}{An integer. The period T' in which forecasting begins.
-If \code{NULL} or T'>T, then we assume all data is pre-treatment.}
-
-\item{sc_est}{A \code{function} which constructs weights associated with a synthetic control-type estimator. See
-\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.}
-
-\item{tune_pars}{A \code{list} containing 3 elements. You must specify the first, and you may specify
-only one of the last two elements. The last two elements describe the folds we include in the cross-validation procedure.
+\item{tune_pars}{A \code{list} containing 5 elements. You must specify the first, and you may specify
+only one of \code{min_preperiods} and \code{set_f}. These elements describe the folds we include in the cross-validation procedure.
 Each fold \code{f} is denoted by the last period it uses for estimation. That is, fold \code{f} will fit estimators using
 data from period 1 through period \code{f}, and forecast into period \code{f+1}. \describe{
 \item{m:}{ an integer representing the  nearest neighbor estimator used.}
@@ -36,17 +30,22 @@ We use all folds from fold \code{min_preperiods} up to the latest possible fold 
 \item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
  for cross-validation. As above, each integer identifies a fold by the last time period it uses in estimation.
  E.g., set_f=c(7,8,9) would implement cross-validation using fold 7, fold 8, and fold 9.}
+ \item{weights_f:}{a \code{vector} of length \code{length(set_f)} or \code{length(min_preperiods:(treatment-2))},
+containing weakly positive relative weight values for each of the cross-validation folds. The elements of \code{weights_f}
+are normalized to sum to 1}
+\item{matchVfun:}{a \code{function} that governs how unit characteristics are weighted together for matching.
+If the estimator is purely outcome-based, then the default behavior is raw matching on the outcome paths.
+If the estimator uses covariates, then the default behavior is to weigh outcomes by their standard deviations
+across units.}
 }
-If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
-In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.}
+#' If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
+In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.
+By default, all folds are equally weighted.}
 
 \item{cv_pars}{A \code{list} containing 2 integer elements, \code{forecast.minlength} and \code{forecast.maxlength}. Cross-validation fold \code{f} will forecast into periods
 \code{f+forecast.minlength}  and up to period \code{f+forecast.maxlength} or the treatment period (whichever comes first).
 If \code{f+forecast.minlength}  lies in the treatment  interval for one of the folds \code{f} given by the user,
 then \code{masc} returns an error.}
-
-\item{nogurobi}{A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
-rather than \code{gurobi}.}
 
 \item{phival}{A real value between 0 and 1. If specified, hard-codes the masc estimator to take the specified weighted
 average of matching and synthetic controls, where \code{phival} indicates the weight on matching (\code{1-phival} being the

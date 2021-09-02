@@ -1,11 +1,11 @@
 Package: masc
 Title: Matching and Synthetic Controls Estimator
-Version: 0.0.1.0000
-Date: 2019-12-19
+Version: 0.1.1.0000
+Date: 2021-9-2
 Authors@R: person("Maxwell", "Kellogg", email = "mdkellogg@uchicago.edu",
                   role = c("aut", "cre"))
 BugReports: https://github.com/maxkllgg/masc/issues
-Description: Implements the matching and synthetic control estimator of Kellogg, Mogstad, Pouliot, and Torgovitsky (2019). This takes a convex combination of a nearest neighbor estimator and a synthetic control estimator. The nearest neighbor estimator used and the weight used to combine the two estimators are selected by a rolling-origin recalibration procedure.
+Description: Implements the matching and synthetic control estimator of Kellogg, Mogstad, Pouliot, and Torgovitsky (2021). This takes a convex combination of a nearest neighbor estimator and a synthetic control estimator. The number of neighbors and the weight used to combine them with SC are selected by a rolling-origin recalibration procedure.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -13,8 +13,8 @@ Imports:
     data.table,
     gurobi,
     plyr,
-    LowRankQP
+    LowRankQP,
+    Synth
 Suggests:
-    Synth,
     data.table
 RoxygenNote: 7.1.1

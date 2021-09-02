@@ -4,21 +4,31 @@
 \alias{solve_masc}
 \title{solving for matching and synthetic control weights}
 \usage{
-solve_masc(donors, treated, treatment, sc_est, tune_pars, nogurobi = FALSE)
+solve_masc(
+  treated,
+  donors,
+  treated.covariates,
+  donors.covariates,
+  treatment,
+  sc_est,
+  match_est,
+  tune.pars,
+  ...
+)
 }
 \arguments{
 \item{donors}{A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.}
 
-\item{tune_pars}{A \code{list} containing one element:
-\describe{\item{m:}{an integer identifying the candidate matching (nearest neighbor) estimator.}}}
+\item{sc_est}{A \code{function} which constructs weights associated with a synthetic control-type estimator. See
+\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.}
 
 \item{treated:}{A \eqn{Tx1} matrix of outcomes for the treated unit.}
 
 \item{treatment:}{An integer. The period T' in which forecasting begins (either the true treatment
-period or the first period after a cross-validation fold).
+period or the first period after a cross-validation fold).}
 
-#'@param sc_est A \code{function} which constructs weights associated with a synthetic control-type estimator. See
-\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.}
+\item{tune_pars}{A \code{list} containing one element:
+\describe{\item{m:}{an integer identifying the candidate matching (nearest neighbor) estimator.}}}
 }
 \value{
 A list containing the weights associated with the two estimators. Weights are ordered
@@ -32,7 +42,7 @@ matching estimator, using data up to the treatment period.
 }
 \references{
 Kellogg, M., M. Mogstad, G. Pouliot, and A. Torgovitsky. Combining Matching and Synthetic Control to Trade
- off Biases from Extrapolation and Interpolation. Working Paper, 2019.
+ off Biases from Extrapolation and Interpolation. Working Paper, 2021
 }
 \seealso{
 Other masc functions: 

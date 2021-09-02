@@ -12,15 +12,15 @@ See `help(masc)` for details and examples using this package.
 
 ### Details
 
-This package implements the matching and synthetic control (masc) estimator of Kellogg, Mogstad, Pouliot, and Torgovitsky (2019), hereafter Kellogg et al., (2019).
+This package implements the matching and synthetic control (masc) estimator of Kellogg, Mogstad, Pouliot, and Torgovitsky (2021), hereafter Kellogg et al., (2021).
 The motivation for this estimator is the complimentary behavior of matching and synthetic control estimators: matching estimators
 limit interpolation bias but are sensitive to extrapolation bias, and the synthetic control (SC) estimator limits extrapolation bias
 but is sensitive to interpolation bias. The SC estimator *interpolates* by using some convex weighted average of untreated units to
 create a synthetic untreated unit with pre-treatment characteristics similar to that of the treated unit. To do this, the SC estimator
 may put weight on control units very dissimilar to the treated unit on pre-treatment characteristics. Interpolation bias arises,
- as shown in Kellogg et al. (2019), if the conditional mean of the outcome is non-linear in pre-treatment characteristics.
+ as shown in Kellogg et al. (2021), if the conditional mean of the outcome is non-linear in pre-treatment characteristics.
 Extrapolation bias arises, on the other hand, when the counterfactual constructed for the treated unit is not
-identical to the treated unit on pre-treatment characteristics. For more details, see Kellogg et al. (2019).
+identical to the treated unit on pre-treatment characteristics. For more details, see Kellogg et al. (2021).
 
 ### Recommended packages
 

@@ -112,10 +112,20 @@
 #' @export
 #' @import data.table
 #' @import plyr
-masc_by_phi<-function(treated, donors,treatment=NULL,
+#' @import Synth
+masc_by_phi<-function(treated,
+                      donors,
+                      treated.covariates=NULL,
+                      donors.covariates=NULL,
+                      treatment=NULL,
+                      sc_est=sc_estimator,
+                      match_est = NearestNeighbors,
                       tune_pars=list(min_preperiods=NULL,set_f=NULL,
-                                     m=NULL,phis=seq(from=0,to=1,length.out=100)),sc_est=sc_estimator,
-                      treatinterval=NULL){
+                                     m=NULL,phis=seq(from=0,to=1,length.out=100)),
+                      cv_pars = list(forecast.minlength = 1, forecast.maxlength = 1),
+                      treatinterval=NULL,
+                      ...){
+
   phi_table<-NULL
   if(is.logical(tune_pars$m)) tune_pars$m<-which(tune_pars$m)
   if(is.null(tune_pars$m))tune_pars$m<-1:ncol(donors)
@@ -130,7 +140,10 @@ for(mpos in 1:length(tune_pars$m)){
   for(ph in 1:length(tune_pars$phis)){
   tunevals<-tune_pars
   tunevals$m<-mval
-phi_result<-cv_masc(treated=treated, donors=donors,treatment=treatment,sc_est=sc_est,tune_pars=tunevals,  cv_pars=cv_pars,
+phi_result<-cv_masc(treated=treated, donors=donors,
+                    treated.covariates = treated.covariates,
+                    donors.covariates = donors.covariates,
+                    treatment=treatment,sc_est=sc_est,tune_pars=tunevals,  cv_pars=cv_pars,
         phival=tune_pars$phis[ph])
         temp_table[ph,]$cv<-phi_result$cv.error
         if(!any(is.na(treatinterval))) temp_table[ph,"pred"]<-mean(phi_result$pred.error[treatinterval])
@@ -147,16 +160,9 @@ return(phi_table)
 #'  Pouliot, and Torgovitsky (2019), \emph{conditional on a given matching estimator} characterized by m.
 #'  \link{masc} loops over evaluations of this function for each candidate matching estimator,
 #'  and selects the one which minimizes cross-validation error.
-#' @param treated A \eqn{Tx1} matrix of outcomes for the treated unit.
 #'
-#' @param donors A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.
 #'
-#' @param treatment An integer. The period T' in which forecasting begins.
-#'  If \code{NULL} or T'>T, then we assume all data is pre-treatment.
-#'
-#'@param sc_est A \code{function} which constructs weights associated with a synthetic control-type estimator. See
-#'\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.
-#' @param tune_pars A \code{list} containing 4 elements. You must specify the first, and you may specify
+#' @param tune_pars A \code{list} containing 5 elements. You must specify the first, and you may specify
 #' only one of \code{min_preperiods} and \code{set_f}. These elements describe the folds we include in the cross-validation procedure.
 #' Each fold \code{f} is denoted by the last period it uses for estimation. That is, fold \code{f} will fit estimators using
 #' data from period 1 through period \code{f}, and forecast into period \code{f+1}. \describe{
@@ -169,22 +175,21 @@ return(phi_table)
 #'  \item{weights_f:}{a \code{vector} of length \code{length(set_f)} or \code{length(min_preperiods:(treatment-2))},
 #' containing weakly positive relative weight values for each of the cross-validation folds. The elements of \code{weights_f}
 #' are normalized to sum to 1}
-#' If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
+#' \item{matchVfun:}{a \code{function} that governs how unit characteristics are weighted together for matching.
+#' If the estimator is purely outcome-based, then the default behavior is raw matching on the outcome paths.
+#' If the estimator uses covariates, then the default behavior is to weigh outcomes by their standard deviations
+#' across units.}
+#' }
+#' #' If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
 #' In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.
 #' By default, all folds are equally weighted.
-#' }
-#' If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
-#' In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.
 #'
 #' @param cv_pars A \code{list} containing 2 integer elements, \code{forecast.minlength} and \code{forecast.maxlength}. Cross-validation fold \code{f} will forecast into periods
 #' \code{f+forecast.minlength}  and up to period \code{f+forecast.maxlength} or the treatment period (whichever comes first).
 #' If \code{f+forecast.minlength}  lies in the treatment  interval for one of the folds \code{f} given by the user,
 #' then \code{masc} returns an error.
+#'
 
-#'
-#' @param nogurobi A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
-#' rather than \code{gurobi}.
-#'
 #' @param phival A real value between 0 and 1. If specified, hard-codes the masc estimator to take the specified weighted
 #' average of matching and synthetic controls, where \code{phival} indicates the weight on matching (\code{1-phival} being the
 #' weight on synthetic controls).
@@ -205,17 +210,27 @@ return(phi_table)
 #' @export
 #' @import data.table
 #' @import plyr
+#' @import Synth
 cv_masc <-
-  function(treated,donors,treatment=NULL, sc_est=sc_estimator,
-           tune_pars=list(min_preperiods=NULL,set_f=NULL,m=NULL, weights_f = NULL),
+  function(treated,
+           donors,
+           treated.covariates = NULL,
+           donors.covariates = NULL,
+           treatment=NULL,
+           sc_est=sc_estimator,
+           match_est = NearestNeighbors,
+           tune_pars=list(min_preperiods=NULL,set_f=NULL,m=NULL, weights_f = NULL, matchVfun = NULL),
            cv_pars = list(forecast.minlength = 1, forecast.maxlength = 1),
-           nogurobi=FALSE, phival=NULL) {
-    estimator <- solve_masc
+            phival=NULL,
+           ...) {
     treated<-as.matrix(treated)
 
     if(is.null(tune_pars$min_preperiods)) tune_pars$min_preperiods<-NA
     if(is.null(tune_pars$set_f)) tune_pars$set_f<-NA
     if(is.null(tune_pars$m)) stop("Must specify a matching estimator in tune_pars")
+    if(is.null(tune_pars$matchVfun)) tune_pars$matchVfun <- Cov.Vars
+
+    if(is.null(treated.covariates) != is.null(donors.covariates)) stop("If specifying covariates for either the treated unit or donor units, you must specify covariates for both of them.")
 
     min_preperiods = tune_pars$min_preperiods
     set_f = tune_pars$set_f
@@ -236,13 +251,18 @@ cv_masc <-
     set_f <- set_f[which(treatment - set_f - 1 >= 1)]
     weights_f <- weights_f/sum(weights_f)
     ####################################
-    finalweights<-estimator(treatment=treat,
+    finalweights<-solve_masc(treatment=treat,
                                    donors=donors,
                                    treated=as.matrix(treated),
+                             donors.covariates = donors.covariates,
+                             treated.covariates = treated.covariates,
                             sc_est=sc_est,
-                         tune_pars=list(
-                           m=tune_pars$m
-                         ), nogurobi = nogurobi)
+                            match_est = match_est,
+                          tune.pars=list(
+                           m=tune_pars$m,
+                           matchVfun=tune_pars$matchVfun
+                         ),
+                         ...)
 
     Y_sc<-NULL
     Y_match<-NULL
@@ -254,13 +274,18 @@ cv_masc <-
     for(k in set_f){
       treatinterval<-(k+forecast.minlength):min(k+forecast.maxlength,treatment-1)
       treat<-k+1
-      foldweights[[position]]<-estimator(treatment=treat,
+      foldweights[[position]]<-solve_masc(treatment=treat,
                                          donors=donors,
                                          treated=as.matrix(treated),
+                                         donors.covariates = donors.covariates,
+                                         treated.covariates = treated.covariates,
                                          sc_est=sc_est,
-                                         tune_pars=list(
-                                           m=tune_pars$m
-                                         ), nogurobi = nogurobi)
+                                         match_est = match_est,
+                                         tune.pars=list(
+                                           m=tune_pars$m,
+                                           matchVfun = tune_pars$matchVfun
+                                         ),
+                                         ...)
       Y_sc<-   c(Y_sc,donors[treatinterval,]%*%foldweights[[position]]$weights.sc)
 
       Y_match<- c(Y_match,donors[treatinterval,]%*%foldweights[[position]]$weights.match)
@@ -294,7 +319,10 @@ cv_masc <-
 
     weight<-phi*finalweights$weights.match+(1-phi)*finalweights$weights.sc
 
-    output<-list(phi_hat=phi,m_hat=tune_pars$m,weights=weight)
+    output<-list(phi_hat=phi,m_hat=tune_pars$m,weights=weight,
+                 solution.v = finalweights$solution.v,
+                 loss.v = finalweights$loss.v,
+                 loss.w = finalweights$loss.w)
     if(treatment <= nrow(donors)) output$pred.error<-treated[treatment:nrow(donors),] - donors[treatment:nrow(donors),]%*%weight
     else output$pred.error<-NA
     output$cv.error<-cv.error
@@ -307,7 +335,7 @@ cv_masc <-
 #' Cross-validated Estimation of the Matching and Synthetic Control Estimator.
 #'
 #' Implements the matching and synthetic control (masc) estimator of Kellogg, Mogstad,
-#'  Pouliot, and Torgovitsky (2019).
+#'  Pouliot, and Torgovitsky (2021).
 #'
 #'  The \code{masc} estimator takes a convex combination of a
 #'  nearest neighbor estimator and a synthetic control estimator. That combination
@@ -317,11 +345,11 @@ cv_masc <-
 #'   This function selects the nearest neighbor estimator and model
 #'  averaging parameter by a rolling-origin cross-validation procedure. Computationally,
 #'  we minimize the cross-validation criterion in two steps. First, for each candidate
-#'  nearest neighbor estimator, we solve for the model averaging parameter using an analytic
+#'  nearest neighbor estimator, we solve for the model averaging parameters using an analytic
 #'  expression (see Equation 15 of the working paper). Then, we select the candidate nearest
 #'  neighbor estimator which produces the smallest cross-validation criterion value.
 #'
-#'  This implementation by default uses \code{gurobi} interfaced with R to solve for the synthetic control estimator.
+#'  This implementation by default may use the \code{gurobi} interfaced with R to solve for the synthetic control estimator.
 #'  Gurobi and its associated R package are available on the gurobi website:
 #'  \url{https://cran.r-project.org/web/packages/prioritizr/vignettes/gurobi_installation.html}
 #'
@@ -332,19 +360,57 @@ cv_masc <-
 #'
 #' @param donors A \eqn{TxN} matrix of outcome paths for untreated units, each column being a control unit.
 #'
-#' Note that currently this estimator is designed so that \code{donors} and \code{treated} should only contain
-#' the time series values for a single outcome for each unit. It does not allow for including other covariates.
-
+#' #' Note that  \code{donors} and \code{treated} should only contain
+#' the time series values for a single outcome for each unit.
+#'
+#' @param treated.covariates An optional argument; A matrix consisting of time series data on covariates,
+#' for the treated unit.
+#'
+#' @param donors.covariates An optional argument; A matrix consisting of time series data on covariates,
+#' for the control units.
+#'
+#' If specified, both \code{treated.covariates} and \code{donors.covariates} should be formatted in the same way.
+#' If using \code{K} covariates, each matrix should have \code{K+2} columns.
+#' \code{K} of these columns represent the covariates, and unit-time observations compose the rows.
+#' The matrices should have two self-explanatory named columns:
+#' \describe{
+#' \item{unit:}{ can be of any type, and may be omitted from \code{treated.covariates}.}
+#' \item{time:}{ a numeric column, indicating when the covariates were realized
+#' relative to the rows of \code{treated} and \code{donors}.
+#' If \code{time = 2}, then the covariates in that row were realized at the same time
+#' as outcomes of row 2 in \code{treated} and \code{donors} (or were
+#' realized after row 1 but sometime before row 2).
+#' For time-invariant pre-determined characteristics, you can set \code{time = 0}.
+#' }
+#' }
+#'
+#'
+#'
+#' The covariates are averaged over the pre-period, and the resulting averages are used to construct
+#' the estimators
+#' (during cross-validation, they will average over averages will be taken within each fold).
+#'
 #' @param treatment An integer. The period T' in which forecasting begins. If \code{NULL} or T'>T, then we
 #'  assume all data is pre-treatment.
 #'
 #'
-#'@param sc_est A \code{function} which constructs weights associated with a synthetic control-type estimator. See
-#'\link{sc_estimator} for input and output if you'd prefer to substitute your own estimator.
+#'@param sc_est A \code{function} which constructs weights associated with a synthetic control-type estimator.
+#'It must accept the arguments \code{treated}, \code{donors}, \code{treated.covariates}, \code{donors.covariates},
+#'and \code{treatment} arguments as defined above.
+#'Defaults to \link{sc_estimator}, which is a wrapper function that implements  \link[Synth]{synth}.
 #'
-#' @param tune_pars_list A \code{list} containing 4 elements. You may specify
+#' @param match_est A \code{function} which constructs weights associated with a matching estimator.
+#'It must accept the arguments \code{treated}, \code{donors}, \code{treated.covariates}, \code{donors.covariates},
+#' and \code{treatment} arguments as defined above.
+#' Additionally, it must accept a \code{tune_pars} argument, governing how tuning parameters
+#' control the matching estimator.
+#'Defaults to \link{NearestNeighbor}.
+#'
+#' @param tune_pars_list A \code{list} containing 5 elements.
+#' You may specify
 #' only one of \code{min_preperiods} and \code{set_f}. Those elements describe the folds we include in the cross-validation procedure.
-#' Each fold \code{f} is indexed by the last period it uses for estimation. That is, fold \code{f} will fit estimators using
+#' Each fold \code{f} is indexed by the last period it uses for estimation.
+#' That is, fold \code{f} will fit estimators using
 #' data from period 1 through period \code{f}, and forecast into period \code{f+1}. \describe{
 #' \item{m:}{ a vector of integers. Denotes the set of nearest neighbor estimators from which we are allowed to pick.
 #' E.g., \code{tune_pars_list$m=c(1,3,5)} would allow us to pick from 1-NN, 3-NN, or 5-NN.
@@ -353,27 +419,37 @@ cv_masc <-
 #' If \code{NULL}, we default to allowing all possible nearest neighbor estimators.}
 #' \item{min_preperiods:}{an integer. The smallest number of estimation periods allowed in a fold used for cross-validation.
 #' We use all folds from fold \code{min_preperiods} up to the latest possible fold \code{treatment-2}.}
-#' \item{set_f:}{a \code{list} containing a single element, a vector of integers. Identifies the set of folds used
+#' \item{set_f:}{a vector of integers. Identifies the set of folds used
 #'  for cross-validation. As above, each integer identifies a fold by the last time period it uses in estimation.
 #'  E.g., set_f=c(7,8,9) would implement cross-validation using fold 7, fold 8, and fold 9.}
 #'  \item{weights_f:}{a \code{vector} of length \code{length(set_f)} or \code{length(min_preperiods:(treatment-2))},
 #' containing weakly positive relative weight values for each of the cross-validation folds. The elements of \code{weights_f}
 #' are normalized to sum to 1}
+#' \item{matchVfun:}{a \code{function} that governs how unit characteristics are weighted together for matching.
+#' If the estimator is purely outcome-based, then the default behavior is raw matching on the outcome paths.
+#' If the estimator uses covariates, then the default behavior is to weigh outcomes by their standard deviations
+#' across units.}
+#' }
 #' If neither \code{min_preperiods} nor \code{set_f} are specified, then we set \code{min_preperiods} to \code{ceiling(treatment/2)}.
 #' In other words, we pick the first cross-validation fold so that it is estimated on the first half of the pre-period data.
 #' By default, all folds are equally weighted.
-#' }
+
 #'
 #' @param cv_pars A \code{list} containing 2 integer elements, \code{forecast.minlength} and \code{forecast.maxlength}. Cross-validation fold \code{f} will forecast into periods
 #' \code{f+forecast.minlength}  and up to period \code{f+forecast.maxlength} or the treatment period (whichever comes first).
 #' If \code{f+forecast.minlength}  lies in the treatment  interval for one of the folds \code{f} given by the user,
 #' then \code{masc} returns an error.
 #'
-#' @param nogurobi A logical value. If true, uses \link[LowRankQP]{LowRankQP} to solve the synthetic control estimator,
-#' rather than \code{gurobi}.
 #'
 #' @param alloutput A logical value. If true, output includes a list \code{all.results} containing
 #' full set of output associated with each candidate nearest neighbor estimator.
+#'
+#'
+#' @param phival If specified, a numeric value describing how the matching and
+#' SC estimator should be combined (without cross-validation). A value of 1 represents
+#' using only the matching estimator, a value of 0 represents using only the SC estimator.
+#'
+#'@param ... Other arguments to pass to \code{sc_est} and \code{match_est}
 #'
 #' @return By default, returns a list containing five objects:
 #' \describe{
@@ -417,13 +493,14 @@ cv_masc <-
 #'
 #'#an equivalent specification:
 #'result<-masc(treated=data3$treated,donors=data3[,-c(1,2)],treatment=treatperiod,
-#'             tune_pars_list=list(m=1:3,set_f=list(3:4)))
+#'             tune_pars_list=list(m=1:3,set_f=3:4))
 #'
 #' #Weights selected, for controls 1 through 4 respectively:
 #' print(round(result$weights,2))
 #'
 #' ##Second example: Terrorism in the Basque Region, from
 #' ##Abadie and Gardeazabal (2003).
+#' ##Fitting estimators purely on outcome paths.
 #'
 #' #First, load the Synth package, which includes the dataset:
 #' if (requireNamespace("Synth",quietly=TRUE) & requireNamespace("data.table",quietly=TRUE)){
@@ -466,17 +543,74 @@ cv_masc <-
 #'#suggesting an estimator between matching and synthetic controls does best at forecasting. The average medium-run treatment
 #'#effect is monotonically increasing as we move away from synthetic control and toward matching.
 #'print(phi_table)
+#'
+#' ##Third example: Terrorism in the Basque Region, from
+#' ##Abadie and Gardeazabal (2003).
+#' ##Fitting estimators on outcome paths and covariates.
+#' ##data setup:
+#' data(basque)
+#' basque<-as.data.table(basque)
+#' basque<-basque[regionno!=1,]
+#' basque[,regionname:= gsub(" (.*)","",regionname)]
+#' basque[,school.high:=school.high+school.post.high]
+#' basque[,school.post.high:=NULL]
+#'
+#' #Grabbing region names:
+#' names<- c(unique(basque[regionno==17,regionname]),unique(basque[regionno!=17,regionname]))
+#'
+#' #Setting up outcomes and covariates:
+#' outcomes <- cbind(basque[regionno==17,gdpcap],
+#'                                             t(reshape(basque[regionno!=17,.(regionno,year,gdpcap)],
+#'                                              idvar='regionno', timevar='year',direction='wide')[,-"regionno",with=FALSE]))
+#' #Abadie and Gardeazabal do not use the first 5 years of data (1955-1959):
+#' outcomes <- outcomes[-(1:5),]
+#' covariates <- copy(basque)
+#' covariates <- covariates[year>=1960,]
+#' covariates[,time:=year-min(year)+1]
+#' covariates[,year:=NULL]
+#' covariates[,regionno:=NULL]
+#' #treating population density as fixed, assigning a common value to all years
+#' #for each region
+#' covariates[,popdens:=mean(popdens,na.rm=TRUE),by=regionname]
+#' for(u in 1:length(names)){
+#' covariates[regionname==names[u],unit:=u]
+#' }
+#' covariates[,regionname:=NULL]
+#' #Reordering covariates, to match Abadie and Gardeazabal
+#' covariates <- covariates[,c(8:11,13,1:7,12,14,15),with=FALSE]
+#'
+#'#Solving for the MASC estimator. Note that the matching and SC functions used
+#'#are NOT the default functions.
+#'#This is because some transformations of the education-related covariates must
+#'#be done to convert average levels over a given time period to shares.
+#'
+#'#NOTE: the paper checks m=1:10, but that can take a while to run.
+#' result <- masc(treated=outcomes[,1], donors=outcomes[,-1],
+#'                treated.covariates = covariates[unit==1,],
+#'                donors.covariates = covariates[unit!=1,],
+#'                treatment=11,
+#'                tune_pars_list=list(m=1,
+#'                                    min_preperiods=5))
 #'}
-#'
-#'
 #' @export
-masc <-
-  function(treated,donors,treatment=NULL,
+#' @import data.table
+#' @import plyr
+#' @import Synth
+masc <- function(treated,
+           donors,
+           treated.covariates = NULL,
+           donors.covariates = NULL,
+           treatment=NULL,
            sc_est=sc_estimator,
+           match_est = NearestNeighbors,
            tune_pars_list = list(),
            cv_pars = list(forecast.minlength = 1, forecast.maxlength = 1),
-           nogurobi = FALSE,
-           alloutput = FALSE) {
+           alloutput = FALSE,
+           phival = NULL,
+           ...
+           ) {
+
+  if(is.list(tune_pars_list$set_f)) tune_pars_list$set_f <- unlist(tune_pars_list$set_f)
 
     treated<-as.matrix(treated)
     donors<-as.matrix(donors)
@@ -488,19 +622,22 @@ masc <-
     if(is.null(tune_pars_list$min_preperiods) &
         any(is.null(tune_pars_list$set_f))) tune_pars_list$min_preperiods<-ceiling(treatment/2)
 
-    if(is.null(tune_pars_list$set_f)) tune_pars_list$set_f<-NA
     if(is.null(tune_pars_list$min_preperiods)) tune_pars_list$min_preperiods<-NA
 
     if(is.null(tune_pars_list$m)) tune_pars_list$m<-1:ncol(donors)
     if(is.logical(tune_pars_list$m)) tune_pars_list$m<-which(tune_pars_list$m)
 
     if(is.null(tune_pars_list$weights_f) &
-       ! is.na(tune_pars_list$set_f)) tune_pars_list$weights_f<-rep(1,length(tune_pars_list$set_f[[1]]))
+       ! is.null(tune_pars_list$set_f)) tune_pars_list$weights_f<-rep(1,length(tune_pars_list$set_f))
 
     if(is.null(tune_pars_list$weights_f) &
        ! is.na(tune_pars_list$min_preperiods)) tune_pars_list$weights_f<-rep(1,length(tune_pars_list$min_preperiods:(treatment-2)))
 
     if(any(tune_pars_list$weights_f <0)) stop("fold-specific weights must be weakly positive.")
+
+    if(is.null(tune_pars_list$matchVfun)) tune_pars_list$matchVfun <- Cov.Vars
+
+
 
     tune_pars_joint <- list()
       position = 1
@@ -509,16 +646,26 @@ masc <-
               tune_pars_joint[[position]] <- list(
                 m = tune_pars_list$m[d],
                 min_preperiods = tune_pars_list$min_preperiods,
-                set_f = tune_pars_list$set_f[[1]],
-                weights_f = tune_pars_list$weights_f
+                set_f = tune_pars_list$set_f,
+                weights_f = tune_pars_list$weights_f,
+                matchVfun = tune_pars_list$matchVfun
               )
               position = position + 1
 
       }
-    allresults <-
-      lapply(tune_pars_joint, function(x)
-        cv_masc(treated = treated,donors=donors,treatment=treatment, sc_est=sc_est,
-          tune_pars = x, cv_pars=cv_pars, nogurobi=nogurobi))
+      allresults <-
+        lapply(tune_pars_joint, function(x)
+        cv_masc(treated = treated,
+                donors=donors,
+                treated.covariates=treated.covariates,
+                donors.covariates=donors.covariates,
+                treatment=treatment,
+                sc_est=sc_est,
+                match_est = match_est,
+                tune_pars = x,
+                cv_pars=cv_pars,
+                phival=phival,
+          ...))
     #allresults is a list of unnamed things, each with named list (weights, pred error, fold stuff, tune pars, cv errors)
     output <-
       allresults[[which.min(lapply(allresults, function(x)
@@ -543,6 +690,26 @@ masc <-
         sapply(allresults, function(x)
           x$pred.error)
       colnames(output$all.results$pred.error)<-paste0(tune_pars_list$m,"-NN")
+
+      output$all.results$SC.loss.v <-
+        sapply(allresults,
+               function(x) x$SC.loss.v)
+      names(output$all.results$SC.loss.v) <- paste0(tune_pars_list$m,"-NN")
+
+      output$all.results$SC.loss.w <-
+        sapply(allresults,
+               function(x) x$SC.loss.w)
+      names(output$all.results$SC.loss.w) <- paste0(tune_pars_list$m,"-NN")
+
+      output$all.results$SCfolds.loss.v <-
+        sapply(allresults, function(x)
+          x$SCfolds.loss.v)
+      names(output$all.results$SCfolds.loss.v) <- paste0(tune_pars_list$m,"-NN")
+
+      output$all.results$SCfolds.loss.w <-
+        sapply(allresults, function(x)
+          x$SCfolds.loss.w)
+      names(output$all.results$SCfolds.loss.w) <- paste0(tune_pars_list$m,"-NN")
     }
     return(output)
   }
